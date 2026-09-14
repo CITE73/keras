@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Eficiencia — Kera Inversiones EIRL</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --cafe:       #3D1800;
+  --cafe-m:     #6B3010;
+  --naranja:    #D4652C;
+  --dorado:     #C8A055;
+  --crema:      #F0E8D8;
+  --crema-o:    #DDD2C0;
+  --blanco:     #FEFCF8;
+  --rojo:       #B22222;
+  --verde:      #2E7D32;
+  --azul:       #1565C0;
+}
+
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--crema);color:var(--cafe);min-height:100vh}
+
+/* ── HEADER ─────────────────────────────── */
+.header{background:var(--cafe);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+.hbrand{display:flex;flex-direction:column}
+.hbrand .nombre{font-size:13px;font-weight:700;color:var(--dorado);letter-spacing:.5px}
+.hbrand .sub{font-size:10px;color:#C8B8A0;letter-spacing:.3px}
+.hnav{display:flex;gap:8px}
+.btn-nav{padding:6px 14px;font-size:11px;font-weight:700;border-radius:4px;cursor:pointer;text-decoration:none;border:none;transition:opacity .15s;letter-spacing:.4px}
+.btn-nav:hover{opacity:.82}
+.btn-o{background:transparent;border:1.5px solid #C8B8A0;color:var(--crema)}
+.btn-f{background:var(--naranja);color:#fff}
+
+/* ── TÍTULO ──────────────────────────────── */
+.titulo{text-align:center;padding:16px 0 10px;font-size:14px;font-weight:700;letter-spacing:2.5px;color:var(--cafe);border-bottom:1px solid var(--crema-o)}
+
+/* ── FILTROS ─────────────────────────────── */
+.filtros{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 24px;background:var(--blanco);border-bottom:1px solid var(--crema-o)}
+.filtros label{font-size:10px;font-weight:700;color:var(--cafe-m);letter-spacing:1px}
+select.fil{padding:6px 26px 6px 10px;font-size:12px;border:1.5px solid var(--crema-o);border-radius:4px;background:var(--blanco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%233D1800'/%3E%3C/svg%3E") no-repeat right 9px center;color:var(--cafe);cursor:pointer;appearance:none}
+.btn-ap{padding:6px 18px;font-size:11px;font-weight:700;letter-spacing:.5px;background:var(--cafe);color:#fff;border:none;border-radius:4px;cursor:pointer;transition:background .15s}
+.btn-ap:hover{background:var(--cafe-m)}
+.btn-cl{padding:6px 16px;font-size:11px;font-weight:700;background:var(--crema-o);color:var(--cafe);border:none;border-radius:4px;cursor:pointer}
+.estado{margin-left:auto;font-size:11px;color:var(--cafe-m);font-style:italic}
+
+/* ── KPI CARDS ───────────────────────────── */
+.kpi-wrap{max-width:1380px;margin:0 auto;padding:16px 24px 4px}
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px) {.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.kpi-card{background:var(--blanco);border-radius:6px;padding:14px 16px;box-shadow:0 1px 5px rgba(61,24,0,.09);border-left:3px solid var(--ac)}
+.kpi-top{font-size:10px;color:#9B8070;font-weight:600;letter-spacing:.3px;margin-bottom:5px}
+.kpi-val{font-size:26px;font-weight:800;color:var(--ac);line-height:1.05;margin-bottom:4px}
+.kpi-bot{font-size:10px;color:var(--ac);font-weight:500}
+
+/* ── CHARTS GRID ─────────────────────────── */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 24px;max-width:1380px;margin:0 auto}
+@media(max-width:860px){.cgrid{grid-template-columns:1fr}}
+
+.ccard{background:var(--blanco);border-radius:6px;padding:18px 20px 20px;box-shadow:0 1px 5px rgba(61,24,0,.09)}
+.ctit{font-size:10px;font-weight:700;letter-spacing:1.6px;color:var(--cafe-m);text-transform:uppercase}
+.csub{font-size:10px;color:#A89080;margin-top:3px;margin-bottom:10px}
+
+/* ── LEYENDA ─────────────────────────────── */
+.ley{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.li{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--cafe-m)}
+.lc{width:11px;height:11px;border-radius:2px;flex-shrink:0}
+.ll{width:18px;height:2px;border-radius:1px;flex-shrink:0}
+
+/* ── CHART WRAPPER ───────────────────────── */
+.cw{position:relative;height:220px}
+
+/* ── PARAM SELECTOR ──────────────────────── */
+.prow{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.prow label{font-size:10px;font-weight:700;color:var(--cafe-m);letter-spacing:.8px}
+select.psel{padding:4px 22px 4px 8px;font-size:11px;border:1.5px solid var(--crema-o);border-radius:4px;background:var(--crema) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='5' viewBox='0 0 9 5'%3E%3Cpath d='M0 0l4.5 5L9 0z' fill='%233D1800'/%3E%3C/svg%3E") no-repeat right 7px center;color:var(--cafe);appearance:none;cursor:pointer}
+
+/* ── RANKING ─────────────────────────────── */
+.rsec{max-width:1380px;margin:0 auto 28px;padding:0 24px}
+.rtable{width:100%;border-collapse:collapse;font-size:12px}
+.rtable th{background:var(--cafe);color:var(--crema);padding:8px 12px;text-align:left;font-size:10px;letter-spacing:.8px;font-weight:700}
+.rtable td{padding:8px 12px;border-bottom:1px solid var(--crema-o);color:var(--cafe)}
+.rtable tr:nth-child(even) td{background:#F9F5EE}
+.rtable .rank{font-weight:800;color:var(--dorado);font-size:13px}
+.sbadge{display:inline-block;padding:2px 9px;border-radius:10px;font-weight:700;font-size:11px}
+.sa{background:#E8F5E9;color:#2E7D32}
+.sm{background:#FFF3E0;color:#E65100}
+.sb{background:#FFEBEE;color:#B71C1C}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="hbrand">
+    <span class="nombre">Kera Inversiones EIRL</span>
+    <span class="sub">Deshidratador Eléctrico 24 Bandejas</span>
+  </div>
+  <nav class="hnav">
+    <a href="kera_deshidratado.html" class="btn-nav btn-o">← Asistente de Planta</a>
+    <button class="btn-nav btn-f">📊 Dashboard</button>
+  </nav>
+</header>
+
+<!-- TÍTULO -->
+<div class="titulo">DASHBOARD DE EFICIENCIA — DESHIDRATADO</div>
+
+<!-- FILTROS -->
+<div class="filtros">
+  <label>FILTRAR POR:</label>
+  <select id="sProd" class="fil"><option value="">Todos los productos</option></select>
+  <select id="sMes"  class="fil"><option value="">Todos los meses</option></select>
+  <button class="btn-ap" onclick="aplicar()">Aplicar</button>
+  <button class="btn-cl" onclick="limpiar()">Limpiar</button>
+  <span id="estado" class="estado">Cargando datos...</span>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-wrap">
+  <div class="kpi-grid">
+    <div class="kpi-card" style="--ac:#D4652C">
+      <div class="kpi-top">Lotes procesados</div>
+      <div class="kpi-val" id="k-lotes">—</div>
+      <div class="kpi-bot" id="k-lotes-s">del período</div>
+    </div>
+    <div class="kpi-card" style="--ac:#6B3010">
+      <div class="kpi-top">Kg entrada total</div>
+      <div class="kpi-val" id="k-pi">—</div>
+      <div class="kpi-bot">materia prima (kg)</div>
+    </div>
+    <div class="kpi-card" style="--ac:#C8A055">
+      <div class="kpi-top">Kg deshidratado</div>
+      <div class="kpi-val" id="k-pf">—</div>
+      <div class="kpi-bot">producto final (kg)</div>
+    </div>
+    <div class="kpi-card" style="--ac:#2E7D32">
+      <div class="kpi-top">Rendimiento promedio</div>
+      <div class="kpi-val" id="k-rend">—</div>
+      <div class="kpi-bot" id="k-rend-s">—</div>
+    </div>
+    <div class="kpi-card" style="--ac:#1565C0">
+      <div class="kpi-top">Horas operativas</div>
+      <div class="kpi-val" id="k-horas">—</div>
+      <div class="kpi-bot">tiempo total deshidratado</div>
+    </div>
+    <div class="kpi-card" style="--ac:#B22222">
+      <div class="kpi-top">Costo real por kg</div>
+      <div class="kpi-val" id="k-costo">—</div>
+      <div class="kpi-bot">S/. por kg deshidratado</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS 2×2 -->
+<div class="cgrid">
+
+  <!-- G1: RENDIMIENTO REAL -->
+  <div class="ccard">
+    <div class="ctit">RENDIMIENTO REAL POR LOTE</div>
+    <div class="csub">Rend_real_pct — comparación entre lotes · Línea: promedio del período</div>
+    <div class="ley">
+      <div class="li"><div class="lc" style="background:#D4652C"></div>Rend. real (%)</div>
+      <div class="li"><div class="ll" style="background:#B22222;border-top:2px dashed #B22222"></div>Promedio</div>
+    </div>
+    <div class="cw"><canvas id="c1"></canvas></div>
+  </div>
+
+  <!-- G2: TIEMPO REAL -->
+  <div class="ccard">
+    <div class="ctit">TIEMPO REAL DE DESHIDRATADO POR LOTE</div>
+    <div class="csub">t_real_h — horas efectivas por lote · Línea: promedio del período</div>
+    <div class="ley">
+      <div class="li"><div class="lc" style="background:#C8A055"></div>Tiempo real (h)</div>
+      <div class="li"><div class="ll" style="background:#B22222;border-top:2px dashed #B22222"></div>Promedio</div>
+    </div>
+    <div class="cw"><canvas id="c2"></canvas></div>
+  </div>
+
+  <!-- G3: VOLUMEN -->
+  <div class="ccard">
+    <div class="ctit">VOLUMEN REAL POR MES Y PRODUCTO</div>
+    <div class="csub">Pi_kg entrada apilado por producto · Línea: Pf_real_kg salida total</div>
+    <div class="ley" id="ley3">
+      <div class="li"><div class="ll" style="background:#B22222"></div>Salida real (kg)</div>
+    </div>
+    <div class="cw"><canvas id="c3"></canvas></div>
+  </div>
+
+  <!-- G4: SCORE -->
+  <div class="ccard">
+    <div class="ctit">SCORE DE EFICIENCIA POR LOTE</div>
+    <div class="csub">Índice 0–100 · Calidad Hf 40% · Rendimiento 40% · Tiempo 20%</div>
+    <div class="prow">
+      <label>PATRÓN CON:</label>
+      <select id="sParam" class="psel" onchange="renderC4()">
+        <option value="">— Sin superposición —</option>
+        <option value="Ts_C">Temp. secador (°C)</option>
+        <option value="Pi_kg">Carga inicial (kg)</option>
+        <option value="t_real_h">Tiempo real (h)</option>
+        <option value="Geo_mm">Geometría (mm)</option>
+        <option value="Hf_real_pct">Humedad final real (%)</option>
+      </select>
+    </div>
+    <div class="ley">
+      <div class="li"><div class="lc" style="background:#2E7D32"></div>Score ≥80</div>
+      <div class="li"><div class="lc" style="background:#D4652C"></div>60–79</div>
+      <div class="li"><div class="lc" style="background:#B22222"></div>&lt;60</div>
+      <div class="li" id="ley4p" style="display:none">
+        <div class="ll" style="background:#6B3010;border-top:2px dashed #6B3010"></div>
+        <span id="ley4pt"></span>
+      </div>
+    </div>
+    <div class="cw"><canvas id="c4"></canvas></div>
+  </div>
+
+</div><!-- /cgrid -->
+
+<!-- RANKING -->
+<div class="rsec">
+  <div class="ccard">
+    <div class="ctit" style="margin-bottom:12px">RANKING DE EFICIENCIA — LOTES (mejor a peor)</div>
+    <div style="overflow-x:auto">
+      <table class="rtable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Lote</th>
+            <th>Producto</th>
+            <th>Operario</th>
+            <th>Score</th>
+            <th>Rend. real</th>
+            <th>Hf real</th>
+            <th>Tiempo real</th>
+            <th>Costo total</th>
+          </tr>
+        </thead>
+        <tbody id="rbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   CONFIGURACIÓN — reemplaza con tu URL de deploy
+═══════════════════════════════════════════════ */
+const APPS_SCRIPT_URL = 'URL_APPS_SCRIPT_KERA_PENDIENTE_DE_DEPLOY';
+
+/* ═══════════════════════════════════════════════
+   ESTADO
+═══════════════════════════════════════════════ */
+let todosReg  = [];
+let regFil    = [];
+const inst    = {};
+
+/* ═══════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════ */
+const $   = id => document.getElementById(id);
+const num = v  => parseFloat(v) || 0;
+
+const MESES_ES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const ORD_MES  = {ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12};
+
+function normMes(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (s.includes('T') || s.includes('Z')) {
+    const d = new Date(s);
+    return `${MESES_ES[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+  }
+  return s.toLowerCase().trim();
+}
+
+function displayMes(m) {
+  const [mes, anio] = m.split('-');
+  return `${mes.toUpperCase()} ${anio}`;
+}
+
+function loteCorto(id) {
+  const p = String(id).split('-');
+  return p.length >= 4 ? `${p[2]}-${p[3]}` : id;
+}
+
+function setEstado(txt, color = '#9B8070') {
+  const el = $('estado');
+  if (el) { el.textContent = txt; el.style.color = color; }
+}
+
+function destruir(id) {
+  if (inst[id]) { inst[id].destroy(); delete inst[id]; }
+}
+
+function avg(arr) {
+  if (!arr.length) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function fmtNum(v, dec = 0) {
+  return Number(v).toLocaleString('es-PE', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+/* ═══════════════════════════════════════════════
+   COLORES
+═══════════════════════════════════════════════ */
+const NAR  = '#D4652C';
+const DOR  = '#C8A055';
+const ROJO = '#B22222';
+const CAFE = '#6B3010';
+const VRD  = '#2E7D32';
+const PROD_COL = [NAR, DOR, CAFE, '#8B5E3C', '#A0784A'];
+
+function scoreCol(s) {
+  return s >= 80 ? VRD : s >= 60 ? NAR : ROJO;
+}
+
+/* ═══════════════════════════════════════════════
+   TOOLTIP BASE
+═══════════════════════════════════════════════ */
+const TT = {
+  backgroundColor: '#3D1800',
+  titleColor:      '#F0E8D8',
+  bodyColor:       '#C8B8A0',
+  cornerRadius:    4,
+  padding:         10,
+  titleFont:       { size: 11 },
+  bodyFont:        { size: 11 }
+};
+
+/* ═══════════════════════════════════════════════
+   SCORE (100% datos reales de Finalizar)
+═══════════════════════════════════════════════ */
+function calcScores(regs) {
+  const maxRend = {};
+  regs.forEach(r => {
+    const v = num(r.Rend_real_pct);
+    if (!maxRend[r.Producto] || v > maxRend[r.Producto]) maxRend[r.Producto] = v;
+  });
+
+  return regs.map(r => {
+    // S_calidad 40% — Hf_real vs Hf_deseada
+    const hfR = num(r.Hf_real_pct), hfD = num(r.Hf_deseada_pct);
+    let sc;
+    if (hfR >= hfD - 1 && hfR <= hfD + 2)  sc = 100;
+    else if (hfR > hfD + 2)                 sc = Math.max(0, 100 - (hfR - hfD - 2) * 10);
+    else                                     sc = Math.max(0, 100 - (hfD - 1 - hfR) * 15);
+
+    // S_rend 40% — normalizado vs mejor lote mismo producto
+    const rR = num(r.Rend_real_pct), mxR = maxRend[r.Producto] || rR;
+    const sr = mxR > 0 ? Math.min(100, (rR / mxR) * 100) : 0;
+
+    // S_tiempo 20% — eficiencia tiempo real vs teórico
+    const tT = num(r.t_teorico_h);
+    const ratio = tT > 0 ? num(r.t_real_h) / tT : 1;
+    let st;
+    if (ratio >= 0.85 && ratio <= 1.05)   st = 100;
+    else if (ratio < 0.85)                st = Math.max(0, 100 - (0.85 - ratio) * 200);
+    else                                  st = Math.max(0, 100 - (ratio - 1.05) * 150);
+
+    const score = (sc * 0.40) + (sr * 0.40) + (st * 0.20);
+    return { ...r, _sc: Math.round(sc), _sr: Math.round(sr), _st: Math.round(st), _score: Math.round(score * 10) / 10 };
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   CARGA DE DATOS
+═══════════════════════════════════════════════ */
+async function cargarDatos() {
+  setEstado('Cargando datos...', '#9B8070');
+  try {
+    const rF = await fetch(`${APPS_SCRIPT_URL}?action=get_productos`, { method: 'GET', redirect: 'follow' });
+    const dF = await rF.json();
+    if (dF.result === 'ok') poblarFiltros(dF.productos, dF.meses);
+
+    const rD = await fetch(`${APPS_SCRIPT_URL}?action=get_dashboard`, { method: 'GET', redirect: 'follow' });
+    const dD = await rD.json();
+
+    if (dD.result === 'ok') {
+      // Normalizar Mes_anio desde ISO a "jun-2026"
+      const regNorm = dD.registros.map(r => ({ ...r, Mes_anio: normMes(r.Mes_anio) }));
+      todosReg = calcScores(regNorm);
+      regFil   = [...todosReg];
+      renderTodos();
+      setEstado(`${todosReg.length} batch${todosReg.length !== 1 ? 's' : ''} cargados`, VRD);
+    } else {
+      setEstado(`Error: ${dD.mensaje || 'respuesta inesperada'}`, ROJO);
+    }
+  } catch(err) {
+    console.error('[Dashboard]', err);
+    setEstado(`Error de conexión · ${err.message}`, ROJO);
+  }
+}
+
+/* ═══════════════════════════════════════════════
+   FILTROS
+═══════════════════════════════════════════════ */
+function poblarFiltros(productos, meses) {
+  const sP = $('sProd'), sM = $('sMes');
+
+  productos.sort().forEach(p => {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p; sP.appendChild(o);
+  });
+
+  // Normalizar y deduplicar meses
+  const mesesNorm = [...new Set(meses.map(normMes))].sort((a, b) => {
+    const [ma, ya] = a.split('-'), [mb, yb] = b.split('-');
+    return (parseInt(ya) - parseInt(yb)) || (ORD_MES[ma] || 0) - (ORD_MES[mb] || 0);
+  });
+
+  mesesNorm.forEach(m => {
+    const o = document.createElement('option');
+    o.value = m; o.textContent = displayMes(m); sM.appendChild(o);
+  });
+}
+
+function aplicar() {
+  const prod = $('sProd').value, mes = $('sMes').value;
+  regFil = todosReg.filter(r => {
+    if (prod && r.Producto !== prod) return false;
+    if (mes  && r.Mes_anio !== mes)  return false;
+    return true;
+  });
+  renderTodos();
+  setEstado(`${regFil.length} batch${regFil.length !== 1 ? 's' : ''} filtrado`, CAFE);
+}
+
+function limpiar() {
+  $('sProd').value = ''; $('sMes').value = '';
+  regFil = [...todosReg];
+  renderTodos();
+  setEstado(`${todosReg.length} batches`, '#9B8070');
+}
+
+/* ═══════════════════════════════════════════════
+   RENDER TODOS
+═══════════════════════════════════════════════ */
+function renderTodos() {
+  renderKPIs();
+  renderC1();
+  renderC2();
+  renderC3();
+  renderC4();
+  renderRanking();
+}
+
+/* ═══════════════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════════════ */
+function renderKPIs() {
+  const d = regFil;
+  if (!d.length) {
+    ['k-lotes','k-pi','k-pf','k-rend','k-horas','k-costo'].forEach(id => $(id).textContent = '—');
+    return;
+  }
+
+  const nLotes = d.length;
+  const sumPi  = d.reduce((a, r) => a + num(r.Pi_kg), 0);
+  const sumPf  = d.reduce((a, r) => a + num(r.Pf_real_kg), 0);
+  const rends  = d.map(r => num(r.Rend_real_pct));
+  const avgRend = avg(rends);
+  const minRend = Math.min(...rends), maxRend = Math.max(...rends);
+  const sumH   = d.reduce((a, r) => a + num(r.t_real_h), 0);
+  const sumCosto = d.reduce((a, r) => a + num(r.Costo_elec_real), 0);
+  const costoKg  = sumPf > 0 ? sumCosto / sumPf : 0;
+
+  $('k-lotes').textContent   = fmtNum(nLotes);
+  $('k-pi').textContent      = fmtNum(sumPi);
+  $('k-pf').textContent      = fmtNum(sumPf, 1);
+  $('k-rend').textContent    = fmtNum(avgRend, 1) + '%';
+  $('k-rend-s').textContent  = `rango: ${minRend.toFixed(1)}% – ${maxRend.toFixed(1)}%`;
+  $('k-horas').textContent   = fmtNum(sumH, 1) + ' h';
+  $('k-costo').textContent   = 'S/. ' + fmtNum(costoKg, 2);
+}
+
+/* ═══════════════════════════════════════════════
+   DATALABELS CONFIG HELPERS
+═══════════════════════════════════════════════ */
+function dlBar(fmt, color = '#3D1800') {
+  return {
+    display: true,
+    anchor: 'end', align: 'top', offset: 2,
+    font: { size: 10, weight: '700' },
+    color,
+    formatter: fmt
+  };
+}
+const dlOff = { display: false };
+
+/* ═══════════════════════════════════════════════
+   G1 — RENDIMIENTO REAL POR LOTE
+═══════════════════════════════════════════════ */
+function renderC1() {
+  destruir('c1');
+  if (!regFil.length) return;
+
+  const labels  = regFil.map(r => loteCorto(r.Lote_ID));
+  const rends   = regFil.map(r => num(r.Rend_real_pct));
+  const promRend = avg(rends);
+  const lineAvg  = rends.map(() => +promRend.toFixed(2));
+
+  inst['c1'] = new Chart($('c1').getContext('2d'), {
+    plugins: [ChartDataLabels],
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar', label: 'Rend. real (%)', data: rends,
+          backgroundColor: NAR, borderRadius: 4, yAxisID: 'y',
+          datalabels: dlBar(v => v.toFixed(1) + '%')
+        },
+        {
+          type: 'line', label: `Prom ${promRend.toFixed(1)}%`,
+          data: lineAvg, borderColor: ROJO, borderWidth: 2,
+          borderDash: [6, 4], pointRadius: 0, tension: 0, yAxisID: 'y',
+          datalabels: { ...dlOff }
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 22 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TT, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } },
+        datalabels: {}
+      },
+      scales: {
+        x: { grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080', maxRotation: 30 } },
+        y: {
+          grid: { color: '#EAE0D0' },
+          ticks: { font: { size: 10 }, color: '#A89080', callback: v => v + '%' },
+          title: { display: true, text: 'Rendimiento (%)', font: { size: 10 }, color: '#A89080' }
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   G2 — TIEMPO REAL POR LOTE
+═══════════════════════════════════════════════ */
+function renderC2() {
+  destruir('c2');
+  if (!regFil.length) return;
+
+  const labels  = regFil.map(r => loteCorto(r.Lote_ID));
+  const horas   = regFil.map(r => num(r.t_real_h));
+  const promH   = avg(horas);
+  const lineAvg = horas.map(() => +promH.toFixed(1));
+
+  inst['c2'] = new Chart($('c2').getContext('2d'), {
+    plugins: [ChartDataLabels],
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar', label: 'Tiempo real (h)', data: horas,
+          backgroundColor: DOR, borderRadius: 4, yAxisID: 'y',
+          datalabels: dlBar(v => v.toFixed(0) + 'h')
+        },
+        {
+          type: 'line', label: `Prom ${promH.toFixed(1)}h`,
+          data: lineAvg, borderColor: ROJO, borderWidth: 2,
+          borderDash: [6, 4], pointRadius: 0, tension: 0, yAxisID: 'y',
+          datalabels: { ...dlOff }
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 22 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TT, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} h` } },
+        datalabels: {}
+      },
+      scales: {
+        x: { grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080', maxRotation: 30 } },
+        y: {
+          grid: { color: '#EAE0D0' },
+          ticks: { font: { size: 10 }, color: '#A89080', callback: v => v + 'h' },
+          title: { display: true, text: 'Horas reales', font: { size: 10 }, color: '#A89080' }
+        }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   G3 — VOLUMEN REAL POR MES Y PRODUCTO
+═══════════════════════════════════════════════ */
+function renderC3() {
+  destruir('c3');
+  if (!regFil.length) return;
+
+  const mesesSet = new Set(), prodsSet = new Set();
+  regFil.forEach(r => { mesesSet.add(r.Mes_anio); prodsSet.add(r.Producto); });
+
+  const meses = [...mesesSet].sort((a, b) => {
+    const [ma, ya] = a.split('-'), [mb, yb] = b.split('-');
+    return (parseInt(ya) - parseInt(yb)) || (ORD_MES[ma] || 0) - (ORD_MES[mb] || 0);
+  });
+  const prods = [...prodsSet];
+
+  const piMat = {}, pfVec = {};
+  meses.forEach(m => { piMat[m] = {}; pfVec[m] = 0; });
+  regFil.forEach(r => {
+    piMat[r.Mes_anio][r.Producto] = (piMat[r.Mes_anio][r.Producto] || 0) + num(r.Pi_kg);
+    pfVec[r.Mes_anio] += num(r.Pf_real_kg);
+  });
+
+  // Leyenda dinámica
+  const ley3 = $('ley3');
+  ley3.innerHTML = prods.map((p, i) =>
+    `<div class="li"><div class="lc" style="background:${PROD_COL[i % PROD_COL.length]}"></div>${p}</div>`
+  ).join('') + '<div class="li"><div class="ll" style="background:#B22222"></div>Salida real (kg)</div>';
+
+  const labels = meses.map(displayMes);
+
+  const barDS = prods.map((p, i) => ({
+    type: 'bar', label: `Entrada ${p}`,
+    data: meses.map(m => piMat[m][p] || 0),
+    backgroundColor: PROD_COL[i % PROD_COL.length],
+    borderRadius: 3, stack: 'ent', yAxisID: 'y',
+    datalabels: {
+      display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+      anchor: 'center', align: 'center',
+      font: { size: 10, weight: '700' }, color: '#fff',
+      formatter: v => v > 0 ? fmtNum(v) : ''
+    }
+  }));
+
+  const lineDS = {
+    type: 'line', label: 'Salida real (kg)',
+    data: meses.map(m => pfVec[m]),
+    borderColor: ROJO, backgroundColor: 'rgba(178,34,34,.08)',
+    pointBackgroundColor: ROJO, pointRadius: 5,
+    borderWidth: 2, tension: 0.3, yAxisID: 'y',
+    datalabels: {
+      anchor: 'end', align: 'top', offset: 4,
+      font: { size: 10, weight: '700' }, color: ROJO,
+      formatter: v => fmtNum(v) + ' kg'
+    }
+  };
+
+  inst['c3'] = new Chart($('c3').getContext('2d'), {
+    plugins: [ChartDataLabels],
+    data: { labels, datasets: [...barDS, lineDS] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 28 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TT, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} kg` } },
+        datalabels: {}
+      },
+      scales: {
+        x: { grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080' }, stacked: true },
+        y: { grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080' }, stacked: true,
+             title: { display: true, text: 'kg', font: { size: 10 }, color: '#A89080' } }
+      }
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   G4 — SCORE DE EFICIENCIA
+═══════════════════════════════════════════════ */
+const PARAM_ET = {
+  Ts_C: 'Temp. secador (°C)', Pi_kg: 'Carga inicial (kg)',
+  t_real_h: 'Tiempo real (h)', Geo_mm: 'Geometría (mm)',
+  Hf_real_pct: 'Humedad final real (%)'
+};
+
+function renderC4() {
+  destruir('c4');
+  if (!regFil.length) return;
+
+  const param  = $('sParam').value;
+  const labels = regFil.map(r => loteCorto(r.Lote_ID));
+  const scores = regFil.map(r => r._score);
+  const cols   = scores.map(s => scoreCol(s));
+
+  const datasets = [{
+    type: 'bar', label: 'Score', data: scores,
+    backgroundColor: cols, borderRadius: 4, yAxisID: 'y',
+    datalabels: {
+      anchor: 'end', align: 'top', offset: 2,
+      font: { size: 11, weight: '800' }, color: '#3D1800',
+      formatter: v => v.toFixed(1)
+    }
+  }];
+
+  const scales = {
+    x: { grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080', maxRotation: 30 } },
+    y: { min: 0, max: 100, grid: { color: '#EAE0D0' }, ticks: { font: { size: 10 }, color: '#A89080' },
+         title: { display: true, text: 'Score (0–100)', font: { size: 10 }, color: '#A89080' } }
+  };
+
+  if (param) {
+    const vals = regFil.map(r => num(r[param]));
+    const minV = Math.min(...vals), maxV = Math.max(...vals);
+    const norm = vals.map(v => maxV > minV ? +((v - minV) / (maxV - minV) * 100).toFixed(1) : 50);
+
+    datasets.push({
+      type: 'line', label: PARAM_ET[param] || param,
+      data: norm, borderColor: CAFE, backgroundColor: 'rgba(107,48,16,.06)',
+      pointBackgroundColor: CAFE, pointRadius: 4,
+      borderWidth: 2, tension: 0.3, borderDash: [6, 3], yAxisID: 'y2',
+      datalabels: { ...dlOff }
+    });
+
+    scales.y2 = {
+      position: 'right', min: 0, max: 100,
+      grid: { drawOnChartArea: false },
+      ticks: {
+        font: { size: 10 }, color: CAFE,
+        callback: v => { const r = minV + (v / 100) * (maxV - minV); return r.toFixed(1); }
+      },
+      title: { display: true, text: PARAM_ET[param] || param, font: { size: 10 }, color: CAFE }
+    };
+
+    $('ley4pt').textContent = PARAM_ET[param] || param;
+    $('ley4p').style.display = 'flex';
+  } else {
+    $('ley4p').style.display = 'none';
+  }
+
+  inst['c4'] = new Chart($('c4').getContext('2d'), {
+    plugins: [ChartDataLabels],
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 22 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TT,
+          callbacks: {
+            label: ctx => ctx.dataset.label === 'Score'
+              ? ` Score: ${ctx.raw}/100`
+              : ` ${ctx.dataset.label}: ${regFil[ctx.dataIndex][param]}`,
+            afterBody: items => {
+              const r = regFil[items[0].dataIndex];
+              return ['', `  Calidad Hf:    ${r._sc}/100`, `  Rendimiento:   ${r._sr}/100`,
+                      `  Tiempo:        ${r._st}/100`, '', `  Producto:  ${r.Producto}`,
+                      `  Operario:  ${r.Operario}`];
+            }
+          }
+        },
+        datalabels: {}
+      },
+      scales
+    }
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   RANKING TABLE
+═══════════════════════════════════════════════ */
+function renderRanking() {
+  const tbody = $('rbody');
+  tbody.innerHTML = '';
+  if (!regFil.length) return;
+
+  const sorted = [...regFil].sort((a, b) => b._score - a._score);
+  sorted.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    const cls = r._score >= 80 ? 'sa' : r._score >= 60 ? 'sm' : 'sb';
+    tr.innerHTML = `
+      <td class="rank">${i + 1}</td>
+      <td><strong>${loteCorto(r.Lote_ID)}</strong></td>
+      <td>${r.Producto}</td>
+      <td>${r.Operario}</td>
+      <td><span class="sbadge ${cls}">${r._score}</span></td>
+      <td>${num(r.Rend_real_pct).toFixed(1)}%</td>
+      <td>${num(r.Hf_real_pct).toFixed(1)}%</td>
+      <td>${num(r.t_real_h).toFixed(0)} h</td>
+      <td>S/. ${fmtNum(num(r.Costo_elec_real), 2)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+cargarDatos();
+</script>
+</body>
+</html>
