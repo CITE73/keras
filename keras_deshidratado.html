@@ -310,7 +310,7 @@ tr:nth-child(even) td{background:#FAFAF8}
 // ══════════════════════════════════════════════════
 //  CONFIG
 // ══════════════════════════════════════════════════
-const URL_DEFAULT = "https://script.google.com/macros/s/AKfycbw8ZFZbblP533ddkhijhk05sBCxJV8ohMx9nRet3gshcL_dYNn2Kza9PjAMDAoVajGqRg/exec";
+const URL_DEFAULT = "https://script.google.com/macros/s/AKfycbxP0pdU1cMRuI2HuUz7WVtlx0jRqZ2pLv2HayX4DetH1VWmHB00HFMTqklHPa1p300myg/exec";
 function getURL(){ return (JSON.parse(localStorage.getItem('apd_cfg')||'{}').url)||URL_DEFAULT; }
 function abrirConfig(){ document.getElementById('cfg-url').value=getURL(); document.getElementById('modal-cfg').classList.add('open'); }
 function cerrarConfig(){ document.getElementById('modal-cfg').classList.remove('open'); }
